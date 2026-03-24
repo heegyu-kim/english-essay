@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-  // CORS headers (needed for browser requests)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -7,14 +6,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { system, userContent } = req.body;
-  if (!system || !userContent) {
-    return res.status(400).json({ error: 'Missing system or userContent' });
-  }
-
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not configured' });
+    return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in environment variables' });
+  }
+
+  const { system, userContent } = req.body || {};
+  if (!system || !userContent) {
+    return res.status(400).json({ error: 'Missing system or userContent in request body' });
   }
 
   try {
@@ -36,15 +35,12 @@ export default async function handler(req, res) {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Anthropic API error:', data);
-      return res.status(response.status).json({ error: data.error?.message || 'API error' });
+      return res.status(response.status).json({ error: data?.error?.message || 'Anthropic API error' });
     }
 
-    const text = data.content?.[0]?.text || '';
-    return res.status(200).json({ text });
+    return res.status(200).json({ text: data.content?.[0]?.text || '' });
 
   } catch (err) {
-    console.error('Server error:', err);
     return res.status(500).json({ error: err.message });
   }
 }
