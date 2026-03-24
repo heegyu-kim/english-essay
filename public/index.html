@@ -114,6 +114,12 @@ header{padding:16px 28px;border-bottom:1px solid var(--bd);display:flex;align-it
 .lr{display:flex;gap:4px;padding:9px 14px 5px}
 .lb{padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;background:transparent;border:1px solid var(--bd);color:var(--mu);cursor:pointer;transition:all 0.15s}
 .lb.active{background:var(--ac2);border-color:var(--ac2);color:var(--bg)}
+
+/* RESIZER */
+.resizer{width:4px;background:transparent;cursor:col-resize;flex-shrink:0;position:relative;transition:background 0.15s;z-index:10}
+.resizer:hover,.resizer.dragging{background:var(--ac)}
+.resizer::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:2px;height:24px;background:var(--bd);border-radius:1px;transition:background 0.15s}
+.resizer:hover::after,.resizer.dragging::after{background:var(--ac)}
 </style>
 </head>
 <body>
@@ -130,6 +136,7 @@ header{padding:16px 28px;border-bottom:1px solid var(--bd);display:flex;align-it
     </div>
     <div class="sbl" id="sbList"></div>
   </div>
+  <div class="resizer" id="rs1"></div>
   <div class="main">
     <div class="tb2">
       <button class="tb" onclick="doFeedback()">&#10022; Feedback</button>
@@ -153,6 +160,7 @@ header{padding:16px 28px;border-bottom:1px solid var(--bd);display:flex;align-it
       </div>
     </div>
   </div>
+  <div class="resizer" id="rs2"></div>
   <div class="rp">
     <div class="pts">
       <button class="pt active" onclick="switchTab('feedback')">Feedback</button>
@@ -544,6 +552,55 @@ function setLang(lang){
   document.getElementById('lbKO').classList.toggle('active',lang==='ko');
   document.getElementById('lbEN').classList.toggle('active',lang==='en');
 }
+
+
+// ── RESIZE ────────────────────────────────────────────────
+(function(){
+  function initResizer(rsId, leftSel, rightSel, minLeft, minRight){
+    var rs = document.getElementById(rsId);
+    var left = document.querySelector(leftSel);
+    var right = document.querySelector(rightSel);
+    if(!rs||!left||!right) return;
+    var dragging = false;
+    var startX, startLeft, startRight;
+
+    rs.addEventListener('mousedown', function(e){
+      dragging = true;
+      startX = e.clientX;
+      startLeft = left.offsetWidth;
+      startRight = right.offsetWidth;
+      rs.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e){
+      if(!dragging) return;
+      var dx = e.clientX - startX;
+      var newLeft = startLeft + dx;
+      var newRight = startRight - dx;
+      if(newLeft < minLeft || newRight < minRight) return;
+      left.style.width = newLeft + 'px';
+      left.style.flex = 'none';
+      right.style.width = newRight + 'px';
+      right.style.flex = 'none';
+    });
+
+    document.addEventListener('mouseup', function(){
+      if(!dragging) return;
+      dragging = false;
+      rs.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    initResizer('rs1', '.sidebar', '.main', 160, 300);
+    initResizer('rs2', '.main',   '.rp',   300, 200);
+  });
+})();
 
 load();
 </script>
