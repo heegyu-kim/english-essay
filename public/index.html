@@ -219,7 +219,7 @@
 </div>
 
 <script>
-const API_URL = 'https://api.anthropic.com/v1/messages';
+const API_URL = '/api/claude';
 let essays = {}, folders = {}, currentId = null, autoSaveTimer = null, activeLang = 'ko';
 let dragId = null, dragOverId = null;
 
@@ -528,13 +528,19 @@ function loadVersion(idx) {
 
 // ── API ───────────────────────────────────────────────────
 async function callClaude(system, userContent) {
-  const res = await fetch(API_URL, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system,messages:[{role:'user',content:userContent}]})
-  });
-  const data=await res.json();
-  return data.content?.[0]?.text||'';
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, userContent })
+    });
+    const data = await res.json();
+    if (data.error) { showToast('API 오류: ' + data.error); return ''; }
+    return data.text || '';
+  } catch(err) {
+    showToast('연결 오류: ' + err.message);
+    return '';
+  }
 }
 
 async function triggerFeedback() {
