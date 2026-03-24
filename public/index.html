@@ -219,18 +219,18 @@
 </div>
 
 <script>
-const API_URL = '/api/claude';
+const API_URL = 'https://api.anthropic.com/v1/messages';
 let essays = {}, folders = {}, currentId = null, autoSaveTimer = null, activeLang = 'ko';
 let dragId = null, dragOverId = null;
 
 // ── STORAGE ──────────────────────────────────────────────
-async function load() {
+function load() {
   try {
-    const r1 = await window.storage.get('essays_v2');
-    const r2 = await window.storage.get('folders_v2');
-    if (r1) essays  = JSON.parse(r1.value);
-    if (r2) folders = JSON.parse(r2.value);
-  } catch(e) {}
+    const r1 = localStorage.getItem('essays_v2');
+    const r2 = localStorage.getItem('folders_v2');
+    if (r1) essays  = JSON.parse(r1);
+    if (r2) folders = JSON.parse(r2);
+  } catch(e) { essays = {}; folders = {}; }
 
   if (!Object.keys(folders).length) {
     const fid = 'f_' + Date.now();
@@ -243,15 +243,15 @@ async function load() {
       created:Date.now(), updated:Date.now()
     };
     essays[eid].versions[0].body = essays[eid].body;
-    await persist();
+    persist();
   }
   renderList();
 }
 
-async function persist() {
+function persist() {
   try {
-    await window.storage.set('essays_v2',  JSON.stringify(essays));
-    await window.storage.set('folders_v2', JSON.stringify(folders));
+    localStorage.setItem('essays_v2',  JSON.stringify(essays));
+    localStorage.setItem('folders_v2', JSON.stringify(folders));
   } catch(e) {}
 }
 
@@ -529,13 +529,12 @@ function loadVersion(idx) {
 // ── API ───────────────────────────────────────────────────
 async function callClaude(system, userContent) {
   const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ system, userContent })
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system,messages:[{role:'user',content:userContent}]})
   });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.text || '';
+  const data=await res.json();
+  return data.content?.[0]?.text||'';
 }
 
 async function triggerFeedback() {
