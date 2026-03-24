@@ -6,763 +6,543 @@
 <title>Essay Studio</title>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@300;400&family=Noto+Serif+KR:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #0d0d0b; --surface: #151512; --surface2: #1c1c18;
-    --border: #2a2a24; --accent: #c8b97a; --accent2: #7a9c8a;
-    --text: #e8e4d8; --text-muted: #8a8878; --text-dim: #5a5a50; --danger: #c87a7a;
-  }
-  body { font-family:'IBM Plex Mono',monospace; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
-  header { padding:20px 32px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; background:var(--surface); }
-  .logo { font-family:'EB Garamond',serif; font-size:1.1rem; letter-spacing:0.08em; color:var(--accent); }
-  .logo span { font-style:italic; color:var(--text-muted); font-size:0.75rem; margin-left:10px; letter-spacing:0.12em; font-family:'IBM Plex Mono',monospace; }
-  .app { display:flex; flex:1; height:calc(100vh - 61px); overflow:hidden; }
-
-  /* SIDEBAR */
-  .sidebar { width:260px; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); flex-shrink:0; user-select:none; }
-  .sidebar-header { padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:6px; }
-  .sidebar-title { font-size:0.6rem; letter-spacing:0.15em; color:var(--text-muted); text-transform:uppercase; flex:1; }
-  .icon-btn { background:transparent; border:1px solid var(--border); color:var(--text-dim); width:26px; height:26px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; transition:all 0.15s; flex-shrink:0; }
-  .icon-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .essay-list { flex:1; overflow-y:auto; padding:6px 0 16px; }
-
-  /* FOLDER */
-  .folder-block { margin-bottom:1px; }
-  .folder-header { display:flex; align-items:center; padding:7px 14px 7px 10px; cursor:pointer; gap:6px; transition:background 0.12s; }
-  .folder-header:hover { background:var(--surface2); }
-  .folder-header:hover .folder-actions { opacity:1; }
-  .folder-arrow { font-size:0.5rem; color:var(--text-dim); width:10px; transition:transform 0.2s; flex-shrink:0; }
-  .folder-arrow.open { transform:rotate(90deg); }
-  .folder-icon { font-size:0.7rem; color:var(--accent2); flex-shrink:0; }
-  .folder-name { flex:1; font-size:0.68rem; letter-spacing:0.06em; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .folder-name-input { flex:1; background:var(--surface2); border:1px solid var(--accent); color:var(--text); font-family:'IBM Plex Mono',monospace; font-size:0.68rem; padding:2px 6px; outline:none; }
-  .folder-count { font-size:0.55rem; color:var(--text-dim); flex-shrink:0; }
-  .folder-actions { display:flex; gap:3px; opacity:0; transition:opacity 0.15s; flex-shrink:0; }
-  .folder-act-btn { background:transparent; border:none; color:var(--text-dim); cursor:pointer; font-size:0.65rem; padding:2px 3px; transition:color 0.12s; line-height:1; }
-  .folder-act-btn:hover { color:var(--accent); }
-  .folder-act-btn.del:hover { color:var(--danger); }
-  .folder-essays { overflow:hidden; max-height:0; transition:max-height 0.25s ease; }
-  .folder-essays.open { max-height:2000px; }
-
-  /* ESSAY ITEM */
-  .essay-item { display:flex; align-items:center; padding:9px 12px 9px 28px; cursor:pointer; border-left:2px solid transparent; transition:all 0.12s; gap:6px; }
-  .essay-item:hover { background:var(--surface2); }
-  .essay-item:hover .essay-item-actions { opacity:1; }
-  .essay-item:hover .essay-drag-handle { opacity:1; }
-  .essay-item.active { border-left-color:var(--accent); background:var(--surface2); }
-  .essay-item.drag-over { border-top:2px solid var(--accent); background:var(--surface2); }
-  .essay-drag-handle { color:var(--text-dim); font-size:0.6rem; cursor:grab; flex-shrink:0; opacity:0; transition:opacity 0.12s; }
-  .essay-item-text { flex:1; min-width:0; }
-  .essay-item-title { font-family:'EB Garamond',serif; font-size:0.8rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .essay-item-meta { font-size:0.56rem; color:var(--text-dim); letter-spacing:0.06em; margin-top:2px; }
-  .version-tag { display:inline-block; background:var(--border); color:var(--text-muted); padding:1px 4px; font-size:0.5rem; letter-spacing:0.08em; margin-right:3px; }
-  .essay-item-actions { display:flex; gap:2px; opacity:0; transition:opacity 0.12s; flex-shrink:0; }
-  .essay-act-btn { background:transparent; border:none; color:var(--text-dim); cursor:pointer; font-size:0.6rem; padding:2px 3px; transition:color 0.12s; line-height:1; }
-  .essay-act-btn:hover { color:var(--accent); }
-  .essay-act-btn.del:hover { color:var(--danger); }
-
-  /* MODAL */
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; }
-  .modal { background:var(--surface2); border:1px solid var(--border); padding:20px; min-width:240px; }
-  .modal-title { font-size:0.65rem; letter-spacing:0.12em; color:var(--accent); text-transform:uppercase; margin-bottom:12px; }
-  .modal-folder-item { padding:8px 10px; font-size:0.7rem; cursor:pointer; transition:background 0.12s; display:flex; align-items:center; gap:8px; }
-  .modal-folder-item:hover { background:var(--border); }
-  .modal-cancel { margin-top:10px; width:100%; padding:7px; background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.1em; cursor:pointer; transition:all 0.15s; text-transform:uppercase; }
-  .modal-cancel:hover { border-color:var(--accent); color:var(--accent); }
-
-  /* MAIN */
-  .main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-  .toolbar { padding:12px 24px; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center; background:var(--surface); flex-wrap:wrap; }
-  .tool-btn { background:transparent; border:1px solid var(--border); color:var(--text-muted); padding:5px 12px; font-family:'IBM Plex Mono',monospace; font-size:0.62rem; letter-spacing:0.1em; cursor:pointer; transition:all 0.15s; text-transform:uppercase; }
-  .tool-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .tool-sep { width:1px; height:20px; background:var(--border); }
-  .version-indicator { margin-left:auto; font-size:0.6rem; color:var(--text-dim); letter-spacing:0.08em; }
-  .editor-area { flex:1; display:flex; overflow:hidden; }
-  .editor-pane { flex:1; display:flex; flex-direction:column; overflow:hidden; }
-  .editor-title-input { width:100%; background:transparent; border:none; border-bottom:1px solid var(--border); padding:16px 24px; font-family:'EB Garamond',serif; font-size:1.2rem; color:var(--text); outline:none; }
-  .editor-title-input::placeholder { color:var(--text-dim); }
-  .editor-body { flex:1; width:100%; background:transparent; border:none; padding:20px 24px; font-family:'Noto Serif KR',serif; font-size:0.9rem; line-height:1.9; color:var(--text); outline:none; resize:none; overflow-y:auto; }
-  .editor-body::placeholder { color:var(--text-dim); }
-  .word-count { font-size:0.6rem; color:var(--text-dim); padding:0 24px 10px; letter-spacing:0.08em; }
-
-  /* RIGHT PANEL */
-  .right-panel { width:340px; border-left:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); flex-shrink:0; overflow:hidden; }
-  .panel-tabs { display:flex; border-bottom:1px solid var(--border); }
-  .panel-tab { flex:1; padding:10px; text-align:center; font-size:0.55rem; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); cursor:pointer; border-bottom:2px solid transparent; transition:all 0.15s; background:transparent; border-top:none; border-left:none; border-right:none; font-family:'IBM Plex Mono',monospace; }
-  .panel-tab:hover { color:var(--text); }
-  .panel-tab.active { color:var(--accent); border-bottom-color:var(--accent); }
-  .panel-content { flex:1; overflow-y:auto; padding:16px; display:none; }
-  .panel-content.active { display:block; }
-  .ai-response { background:var(--surface2); border:1px solid var(--border); padding:14px; margin-bottom:12px; font-family:'Noto Serif KR',serif; font-size:0.8rem; line-height:1.8; color:var(--text); white-space:pre-wrap; }
-  .ai-response-label { font-family:'IBM Plex Mono',monospace; font-size:0.55rem; letter-spacing:0.15em; color:var(--accent); text-transform:uppercase; margin-bottom:8px; }
-  .reading-item { border:1px solid var(--border); padding:12px; margin-bottom:8px; transition:border-color 0.15s; }
-  .reading-item:hover { border-color:var(--accent2); }
-  .reading-title { font-family:'EB Garamond',serif; font-style:italic; font-size:0.82rem; color:var(--text); margin-bottom:3px; }
-  .reading-author { font-size:0.62rem; color:var(--text-muted); letter-spacing:0.06em; margin-bottom:6px; }
-  .reading-note { font-size:0.72rem; color:var(--text-muted); line-height:1.6; }
-  .reading-tag { display:inline-block; padding:2px 6px; font-size:0.55rem; letter-spacing:0.08em; margin-top:6px; margin-right:4px; }
-  .tag-core { background:rgba(200,185,122,0.15); color:var(--accent); }
-  .tag-arch { background:rgba(122,156,138,0.15); color:var(--accent2); }
-  .tag-theory { background:rgba(150,150,200,0.15); color:#9a9acc; }
-  .version-item { border:1px solid var(--border); padding:10px 12px; margin-bottom:6px; cursor:pointer; transition:all 0.15s; display:flex; justify-content:space-between; align-items:center; }
-  .version-item:hover { border-color:var(--accent); }
-  .version-item.current { border-color:var(--accent); }
-  .version-num { font-size:0.7rem; color:var(--accent); letter-spacing:0.1em; }
-  .version-date { font-size:0.58rem; color:var(--text-dim); }
-  .loading { display:flex; align-items:center; gap:8px; padding:12px; color:var(--text-muted); font-size:0.72rem; }
-  .loading-dot { width:4px; height:4px; background:var(--accent); border-radius:50%; animation:pulse 1.4s ease-in-out infinite; }
-  .loading-dot:nth-child(2) { animation-delay:0.2s; }
-  .loading-dot:nth-child(3) { animation-delay:0.4s; }
-  @keyframes pulse { 0%,80%,100% { opacity:0.2; transform:scale(0.8); } 40% { opacity:1; transform:scale(1); } }
-  ::-webkit-scrollbar { width:4px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border); }
-  .empty-state { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:12px; color:var(--text-dim); }
-  .empty-state-text { font-family:'EB Garamond',serif; font-style:italic; font-size:0.9rem; }
-  .empty-state-sub { font-size:0.65rem; letter-spacing:0.1em; }
-  .action-bar { padding:10px 16px; border-top:1px solid var(--border); display:flex; gap:6px; background:var(--surface); }
-  .action-btn { flex:1; padding:8px; background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.1em; cursor:pointer; text-transform:uppercase; transition:all 0.15s; }
-  .action-btn:hover { border-color:var(--accent); color:var(--accent); }
-  .action-btn.primary { background:var(--accent); border-color:var(--accent); color:var(--bg); }
-  .action-btn.primary:hover { opacity:0.85; }
-  .lang-toggle { display:flex; gap:4px; padding:10px 16px 6px; }
-  .lang-btn { padding:4px 10px; font-family:'IBM Plex Mono',monospace; font-size:0.6rem; letter-spacing:0.1em; background:transparent; border:1px solid var(--border); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
-  .lang-btn.active { background:var(--accent2); border-color:var(--accent2); color:var(--bg); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0d0d0b;--sf:#151512;--sf2:#1c1c18;--bd:#2a2a24;--ac:#c8b97a;--ac2:#7a9c8a;--tx:#e8e4d8;--mu:#8a8878;--dm:#5a5a50;--dg:#c87a7a}
+body{font-family:'IBM Plex Mono',monospace;background:var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{padding:16px 28px;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;background:var(--sf);flex-shrink:0}
+.logo{font-family:'EB Garamond',serif;font-size:1.1rem;letter-spacing:0.08em;color:var(--ac)}
+.logo span{font-style:italic;color:var(--mu);font-size:0.75rem;margin-left:10px;font-family:'IBM Plex Mono',monospace}
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:260px;border-right:1px solid var(--bd);display:flex;flex-direction:column;background:var(--sf);flex-shrink:0}
+.sbh{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:6px}
+.sbt{font-size:0.58rem;letter-spacing:0.15em;color:var(--mu);text-transform:uppercase;flex:1}
+.ib{background:transparent;border:1px solid var(--bd);color:var(--dm);width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.8rem;transition:all 0.15s;flex-shrink:0}
+.ib:hover{border-color:var(--ac);color:var(--ac)}
+.ib.pr{background:var(--ac);border-color:var(--ac);color:var(--bg)}
+.sbl{flex:1;overflow-y:auto;padding:4px 0 12px}
+.fb{margin-bottom:1px}
+.fh{display:flex;align-items:center;padding:6px 12px 6px 8px;cursor:pointer;gap:5px}
+.fh:hover{background:var(--sf2)}
+.fh:hover .fa2{opacity:1}
+.far{font-size:0.45rem;color:var(--dm);width:10px;transition:transform 0.2s;flex-shrink:0}
+.far.open{transform:rotate(90deg)}
+.fic{font-size:0.65rem;color:var(--ac2);flex-shrink:0}
+.fn{flex:1;font-size:0.65rem;letter-spacing:0.05em;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fni{flex:1;background:var(--sf2);border:1px solid var(--ac);color:var(--tx);font-family:'IBM Plex Mono',monospace;font-size:0.65rem;padding:1px 5px;outline:none}
+.fct{font-size:0.52rem;color:var(--dm);flex-shrink:0}
+.fa2{display:flex;gap:2px;opacity:0;transition:opacity 0.15s;flex-shrink:0}
+.fab{background:transparent;border:none;color:var(--dm);cursor:pointer;font-size:0.6rem;padding:2px;line-height:1}
+.fab:hover{color:var(--ac)}
+.fab.d:hover{color:var(--dg)}
+.fe{overflow:hidden;max-height:0;transition:max-height 0.2s ease}
+.fe.open{max-height:2000px}
+.ei{display:flex;align-items:center;padding:8px 10px 8px 26px;cursor:pointer;border-left:2px solid transparent;gap:5px}
+.ei:hover{background:var(--sf2)}
+.ei:hover .ea{opacity:1}
+.ei:hover .eh{opacity:1}
+.ei.active{border-left-color:var(--ac);background:var(--sf2)}
+.ei.dov{border-top:2px solid var(--ac)}
+.eh{color:var(--dm);font-size:0.55rem;cursor:grab;flex-shrink:0;opacity:0}
+.et2{flex:1;min-width:0}
+.etit{font-family:'EB Garamond',serif;font-size:0.85rem;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.emt{font-size:0.52rem;color:var(--dm);margin-top:2px}
+.vt{display:inline-block;background:var(--bd);color:var(--mu);padding:1px 4px;font-size:0.48rem;margin-right:3px}
+.ea{display:flex;gap:1px;opacity:0;flex-shrink:0}
+.eab{background:transparent;border:none;color:var(--dm);cursor:pointer;font-size:0.58rem;padding:2px;line-height:1}
+.eab:hover{color:var(--ac)}
+.eab.d:hover{color:var(--dg)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;display:flex;align-items:center;justify-content:center}
+.mo{background:var(--sf2);border:1px solid var(--bd);padding:18px;min-width:220px}
+.mot{font-size:0.62rem;letter-spacing:0.12em;color:var(--ac);text-transform:uppercase;margin-bottom:10px}
+.mfi{padding:7px 10px;font-size:0.68rem;cursor:pointer;display:flex;align-items:center;gap:7px}
+.mfi:hover{background:var(--bd)}
+.mc{margin-top:8px;width:100%;padding:6px;background:transparent;border:1px solid var(--bd);color:var(--mu);font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;cursor:pointer;text-transform:uppercase}
+.mc:hover{border-color:var(--ac);color:var(--ac)}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.tb2{padding:10px 20px;border-bottom:1px solid var(--bd);display:flex;gap:6px;align-items:center;background:var(--sf);flex-wrap:wrap;flex-shrink:0}
+.tb{background:transparent;border:1px solid var(--bd);color:var(--mu);padding:4px 11px;font-family:'IBM Plex Mono',monospace;font-size:0.6rem;letter-spacing:0.1em;cursor:pointer;transition:all 0.15s;text-transform:uppercase}
+.tb:hover{border-color:var(--ac);color:var(--ac)}
+.tbp{border-color:var(--ac2);color:var(--ac2)}
+.tbp:hover{background:var(--ac2);color:var(--bg)}
+.ts{width:1px;height:18px;background:var(--bd)}
+.vi2{margin-left:auto;font-size:0.58rem;color:var(--dm)}
+.ea2{flex:1;display:flex;overflow:hidden}
+.ep{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.eti{width:100%;background:transparent;border:none;border-bottom:1px solid var(--bd);padding:14px 22px;font-family:'EB Garamond',serif;font-size:1.2rem;color:var(--tx);outline:none}
+.eti::placeholder{color:var(--dm)}
+.ebi{flex:1;width:100%;background:transparent;border:none;padding:18px 22px;font-family:'Noto Serif KR',serif;font-size:0.9rem;line-height:1.9;color:var(--tx);outline:none;resize:none;overflow-y:auto}
+.ebi::placeholder{color:var(--dm)}
+.wc2{font-size:0.58rem;color:var(--dm);padding:0 22px 8px}
+.rp{width:330px;border-left:1px solid var(--bd);display:flex;flex-direction:column;background:var(--sf);flex-shrink:0;overflow:hidden}
+.pts{display:flex;border-bottom:1px solid var(--bd)}
+.pt{flex:1;padding:9px 4px;text-align:center;font-size:0.52rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--mu);cursor:pointer;border-bottom:2px solid transparent;background:transparent;border-top:none;border-left:none;border-right:none;font-family:'IBM Plex Mono',monospace}
+.pt:hover{color:var(--tx)}
+.pt.active{color:var(--ac);border-bottom-color:var(--ac)}
+.pc{flex:1;overflow-y:auto;padding:14px;display:none}
+.pc.active{display:block}
+.ail{font-family:'IBM Plex Mono',monospace;font-size:0.52rem;letter-spacing:0.14em;color:var(--ac);text-transform:uppercase;margin-bottom:7px}
+.aib{background:var(--sf2);border:1px solid var(--bd);padding:12px;margin-bottom:10px;font-family:'Noto Serif KR',serif;font-size:0.78rem;line-height:1.85;color:var(--tx);white-space:pre-wrap}
+.ri{border:1px solid var(--bd);padding:11px;margin-bottom:7px}
+.ri:hover{border-color:var(--ac2)}
+.rit{font-family:'EB Garamond',serif;font-style:italic;font-size:0.82rem;color:var(--tx);margin-bottom:2px}
+.ria{font-size:0.6rem;color:var(--mu);margin-bottom:5px}
+.rin{font-size:0.7rem;color:var(--mu);line-height:1.6}
+.rtg{display:inline-block;padding:2px 5px;font-size:0.52rem;margin-top:5px;margin-right:3px}
+.tc{background:rgba(200,185,122,0.15);color:var(--ac)}
+.ta{background:rgba(122,156,138,0.15);color:var(--ac2)}
+.tt{background:rgba(150,150,200,0.15);color:#9a9acc}
+.vit{border:1px solid var(--bd);padding:9px 11px;margin-bottom:5px;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.vit:hover{border-color:var(--ac)}
+.vit.cur{border-color:var(--ac)}
+.vn2{font-size:0.68rem;color:var(--ac);letter-spacing:0.1em}
+.vd2{font-size:0.55rem;color:var(--dm)}
+.ld2{display:flex;align-items:center;gap:7px;padding:12px;color:var(--mu);font-size:0.7rem}
+.ldot{width:4px;height:4px;background:var(--ac);border-radius:50%;animation:pulse 1.4s ease-in-out infinite}
+.ldot:nth-child(2){animation-delay:0.2s}
+.ldot:nth-child(3){animation-delay:0.4s}
+@keyframes pulse{0%,80%,100%{opacity:0.2;transform:scale(0.8)}40%{opacity:1;transform:scale(1)}}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bd)}
+.emp{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:10px;color:var(--dm)}
+.empt{font-family:'EB Garamond',serif;font-style:italic;font-size:0.9rem}
+.emps{font-size:0.62rem;letter-spacing:0.1em}
+.ab2{padding:9px 14px;border-top:1px solid var(--bd);display:flex;gap:5px;background:var(--sf);flex-shrink:0}
+.ab{flex:1;padding:7px;background:transparent;border:1px solid var(--bd);color:var(--mu);font-family:'IBM Plex Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;cursor:pointer;text-transform:uppercase;transition:all 0.15s}
+.ab:hover{border-color:var(--ac);color:var(--ac)}
+.ab.p{background:var(--ac);border-color:var(--ac);color:var(--bg)}
+.lr{display:flex;gap:4px;padding:9px 14px 5px}
+.lb{padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:0.58rem;background:transparent;border:1px solid var(--bd);color:var(--mu);cursor:pointer;transition:all 0.15s}
+.lb.active{background:var(--ac2);border-color:var(--ac2);color:var(--bg)}
 </style>
 </head>
 <body>
 <header>
   <div class="logo">Essay Studio <span>// GSD MDes Prep</span></div>
-  <span style="font-size:0.6rem;color:var(--text-dim);letter-spacing:0.1em;">HKGK</span>
+  <span style="font-size:0.58rem;color:var(--dm);letter-spacing:0.1em;">HKGK</span>
 </header>
 <div class="app">
   <div class="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-title">Library</div>
-      <button class="icon-btn" title="New Folder" onclick="newFolder()">⊞</button>
-      <button class="icon-btn" title="New Essay" onclick="newEssay()" style="background:var(--accent);border-color:var(--accent);color:var(--bg);">+</button>
+    <div class="sbh">
+      <span class="sbt">Library</span>
+      <button class="ib" onclick="newFolder()" title="New Folder">&#8862;</button>
+      <button class="ib pr" onclick="newEssay()" title="New Essay">+</button>
     </div>
-    <div class="essay-list" id="essayList"></div>
+    <div class="sbl" id="sbList"></div>
   </div>
-
   <div class="main">
-    <div class="toolbar">
-      <button class="tool-btn" onclick="triggerFeedback()">✦ Feedback</button>
-      <button class="tool-btn" onclick="triggerTranslation('ko-en')">KO → EN</button>
-      <button class="tool-btn" onclick="triggerTranslation('en-ko')">EN → KO</button>
-      <div class="tool-sep"></div>
-      <button class="tool-btn" onclick="saveVersion()">Save Version</button>
-      <button class="tool-btn" onclick="triggerReadingRecs()">Reading List</button>
-      <div class="version-indicator" id="versionIndicator">—</div>
-      <button class="tool-btn" onclick="printEssay()" style="margin-left:4px;border-color:var(--accent2);color:var(--accent2);">⎙ Print</button>
+    <div class="tb2">
+      <button class="tb" onclick="doFeedback()">&#10022; Feedback</button>
+      <button class="tb" onclick="doTranslate('ko-en')">KO&#8594;EN</button>
+      <button class="tb" onclick="doTranslate('en-ko')">EN&#8594;KO</button>
+      <div class="ts"></div>
+      <button class="tb" onclick="saveVer()">Save Ver.</button>
+      <button class="tb" onclick="doReadings()">Readings</button>
+      <button class="tb tbp" onclick="doPrint()">&#9113; Print</button>
+      <div class="vi2" id="vInd">&#8212;</div>
     </div>
-    <div class="editor-area">
-      <div class="empty-state" id="emptyState">
-        <div class="empty-state-text">No essay selected.</div>
-        <div class="empty-state-sub">Create a new essay or select one.</div>
+    <div class="ea2">
+      <div class="emp" id="emptyState">
+        <div class="empt">No essay selected.</div>
+        <div class="emps">Create a new essay or select one.</div>
       </div>
-      <div class="editor-pane" id="editorPane" style="display:none;">
-        <input class="editor-title-input" id="titleInput" placeholder="Essay title..." oninput="onEdit()" />
-        <textarea class="editor-body" id="bodyInput" placeholder="글을 시작하세요..." oninput="onEdit()"></textarea>
-        <div class="word-count" id="wordCount">0 chars</div>
+      <div class="ep" id="edPane" style="display:none;">
+        <input class="eti" id="titleIn" placeholder="Essay title..." oninput="onEdit()">
+        <textarea class="ebi" id="bodyIn" placeholder="글을 시작하세요..." oninput="onEdit()"></textarea>
+        <div class="wc2" id="wc">0 chars</div>
       </div>
     </div>
   </div>
-
-  <div class="right-panel">
-    <div class="panel-tabs">
-      <button class="panel-tab active" onclick="switchTab('feedback')">Feedback</button>
-      <button class="panel-tab" onclick="switchTab('translation')">Translation</button>
-      <button class="panel-tab" onclick="switchTab('readings')">Readings</button>
-      <button class="panel-tab" onclick="switchTab('versions')">Versions</button>
+  <div class="rp">
+    <div class="pts">
+      <button class="pt active" onclick="switchTab('feedback')">Feedback</button>
+      <button class="pt" onclick="switchTab('translation')">Trans.</button>
+      <button class="pt" onclick="switchTab('readings')">Readings</button>
+      <button class="pt" onclick="switchTab('versions')">Vers.</button>
     </div>
-    <div class="panel-content active" id="tab-feedback">
-      <div class="empty-state" style="height:200px;">
-        <div class="empty-state-text" style="font-size:0.8rem;">Ready for feedback</div>
-        <div class="empty-state-sub">Write an essay and press ✦ Feedback</div>
+    <div class="pc active" id="tab-feedback">
+      <div class="emp" style="height:180px;"><div class="empt" style="font-size:0.82rem;">Ready for feedback</div><div class="emps">Press Feedback button</div></div>
+    </div>
+    <div class="pc" id="tab-translation">
+      <div class="lr">
+        <button class="lb active" id="lbKO" onclick="setLang('ko')">KO</button>
+        <button class="lb" id="lbEN" onclick="setLang('en')">EN</button>
+      </div>
+      <div id="transContent" style="padding:0 14px 14px;">
+        <div class="emp" style="height:160px;"><div class="empt" style="font-size:0.82rem;">Translation</div><div class="emps">Press KO&#8594;EN or EN&#8594;KO</div></div>
       </div>
     </div>
-    <div class="panel-content" id="tab-translation">
-      <div class="lang-toggle">
-        <button class="lang-btn active" id="langKO" onclick="setLang('ko')">KO</button>
-        <button class="lang-btn" id="langEN" onclick="setLang('en')">EN</button>
-      </div>
-      <div id="translationContent" style="padding:0 16px 16px;">
-        <div class="empty-state" style="height:180px;">
-          <div class="empty-state-text" style="font-size:0.8rem;">Translation</div>
-          <div class="empty-state-sub">Press KO→EN or EN→KO</div>
-        </div>
-      </div>
-    </div>
-    <div class="panel-content" id="tab-readings">
+    <div class="pc" id="tab-readings">
       <div id="readingsContent">
-        <div style="padding:12px 0 8px;font-size:0.6rem;letter-spacing:0.12em;color:var(--text-dim);text-transform:uppercase;">Core Reading List</div>
-        <div class="reading-item"><div class="reading-title">The Eyes of the Skin</div><div class="reading-author">Juhani Pallasmaa, 1996</div><div class="reading-note">다감각 건축 경험의 이론적 기초. VR 소외감 논지의 직접적 지지대. 완독 권장.</div><div><span class="reading-tag tag-core">완독</span><span class="reading-tag tag-arch">건축</span></div></div>
-        <div class="reading-item"><div class="reading-title">Tools for Conviviality</div><div class="reading-author">Ivan Illich, 1973</div><div class="reading-note">역생산성 개념의 원전. VR 몰입-소외 역설을 이론화하는 데 핵심. 짧고 강렬.</div><div><span class="reading-tag tag-core">완독</span><span class="reading-tag tag-theory">기술철학</span></div></div>
-        <div class="reading-item"><div class="reading-title">Understanding Media</div><div class="reading-author">Marshall McLuhan, 1964</div><div class="reading-note">미디어는 메시지다. Mediums 트랙에서 필수 언어.</div><div><span class="reading-tag tag-core">완독</span><span class="reading-tag tag-theory">미디어</span></div></div>
-        <div class="reading-item"><div class="reading-title">Phenomenology of Perception</div><div class="reading-author">Maurice Merleau-Ponty, 1945</div><div class="reading-note">신체가 공간을 경험하는 방식. Part 1 "The Body" 우선 독해.</div><div><span class="reading-tag tag-theory">현상학</span><span class="reading-tag tag-arch">선독</span></div></div>
-        <div class="reading-item"><div class="reading-title">Technology and the Character of Contemporary Life</div><div class="reading-author">Albert Borgmann, 1984</div><div class="reading-note">Device Paradigm — 기술이 focal practices를 희석. Part 2 선독.</div><div><span class="reading-tag tag-theory">기술철학</span></div></div>
-        <div class="reading-item"><div class="reading-title">Writing Machines</div><div class="reading-author">N. Katherine Hayles, 2002</div><div class="reading-note">미디어와 물질성, 체현(embodiment). 서론+2-3챕터.</div><div><span class="reading-tag tag-theory">미디어</span></div></div>
-        <div class="reading-item"><div class="reading-title">Recursivity and Contingency</div><div class="reading-author">Yuk Hui, 2019</div><div class="reading-note">기술철학을 동아시아적 관점에서 재구성. 서론만.</div><div><span class="reading-tag tag-theory">기술철학</span></div></div>
+        <div style="padding:10px 0 6px;font-size:0.55rem;letter-spacing:0.12em;color:var(--dm);text-transform:uppercase;">Core Reading List</div>
+        <div class="ri"><div class="rit">The Eyes of the Skin</div><div class="ria">Juhani Pallasmaa, 1996</div><div class="rin">다감각 건축 경험의 이론적 기초. VR 소외감 논지의 직접적 지지대. 완독 권장.</div><div><span class="rtg tc">완독</span><span class="rtg ta">건축</span></div></div>
+        <div class="ri"><div class="rit">Tools for Conviviality</div><div class="ria">Ivan Illich, 1973</div><div class="rin">역생산성 개념의 원전. VR 몰입-소외 역설을 이론화하는 데 핵심.</div><div><span class="rtg tc">완독</span><span class="rtg tt">기술철학</span></div></div>
+        <div class="ri"><div class="rit">Understanding Media</div><div class="ria">Marshall McLuhan, 1964</div><div class="rin">미디어는 메시지다. Mediums 트랙 필수 언어.</div><div><span class="rtg tc">완독</span><span class="rtg tt">미디어</span></div></div>
+        <div class="ri"><div class="rit">Phenomenology of Perception</div><div class="ria">Maurice Merleau-Ponty, 1945</div><div class="rin">신체가 공간을 경험하는 방식. Part 1 선독.</div><div><span class="rtg tt">현상학</span></div></div>
+        <div class="ri"><div class="rit">Technology and the Character of Contemporary Life</div><div class="ria">Albert Borgmann, 1984</div><div class="rin">Device Paradigm. 보완재/대체제 논지와 직결.</div><div><span class="rtg tt">기술철학</span></div></div>
+        <div class="ri"><div class="rit">Writing Machines</div><div class="ria">N. Katherine Hayles, 2002</div><div class="rin">미디어와 물질성, 체현. 서론+2-3챕터.</div><div><span class="rtg tt">미디어</span></div></div>
+        <div class="ri"><div class="rit">Recursivity and Contingency</div><div class="ria">Yuk Hui, 2019</div><div class="rin">기술철학을 동아시아적 관점에서 재구성. 서론만.</div><div><span class="rtg tt">기술철학</span></div></div>
       </div>
     </div>
-    <div class="panel-content" id="tab-versions">
-      <div id="versionsList">
-        <div class="empty-state" style="height:180px;"><div class="empty-state-text" style="font-size:0.8rem;">No versions yet</div><div class="empty-state-sub">Press "Save Version"</div></div>
-      </div>
+    <div class="pc" id="tab-versions">
+      <div id="verList"><div class="emp" style="height:160px;"><div class="empt" style="font-size:0.82rem;">No versions yet</div></div></div>
     </div>
-    <div class="action-bar" id="actionBar" style="display:none;">
-      <button class="action-btn" onclick="triggerFeedback()">✦ Feedback</button>
-      <button class="action-btn primary" onclick="saveVersion()">Save v</button>
+    <div class="ab2" id="actBar" style="display:none;">
+      <button class="ab" onclick="doFeedback()">&#10022; Feedback</button>
+      <button class="ab p" onclick="saveVer()">Save v</button>
     </div>
   </div>
 </div>
-
 <script>
-const API_URL = '/api/claude';
-let essays = {}, folders = {}, currentId = null, autoSaveTimer = null, activeLang = 'ko';
-let dragId = null, dragOverId = null;
+var essays={}, folders={}, curId=null, saveTimer=null, dragId=null;
 
-// ── STORAGE ──────────────────────────────────────────────
-function load() {
-  try {
-    const r1 = localStorage.getItem('essays_v2');
-    const r2 = localStorage.getItem('folders_v2');
-    if (r1) essays  = JSON.parse(r1);
-    if (r2) folders = JSON.parse(r2);
-  } catch(e) { essays = {}; folders = {}; }
-
-  if (!Object.keys(folders).length) {
-    const fid = 'f_' + Date.now();
-    folders[fid] = { id:fid, name:'VR & Architecture', order:0, open:true };
-    const eid = 'e_' + Date.now();
-    essays[eid] = {
-      id:eid, folderId:fid, order:0, title:'가상공간의 역설',
-      body:`Juhani Pallasmaa는 《The Eyes of the Skin》에서 현대 건축이 시각 중심주의에 지나치게 종속되어 왔다고 주장한다. 그에 따르면 건축은 망막이 아니라 몸 전체로 경험되는 것이며, 촉각·청각·후각을 배제한 공간은 인간을 세계로부터 소외시킨다. 이 주장은 오늘날 VR 기술이 직면한 위기를 읽는 데 놀랍도록 유효한 렌즈를 제공한다.\n\n메타버스의 몰락이라며 미디어가 VR 생태계에 비극을 고하는 지금, 나는 이 지점에서 VR의 기술적 한계를 논하기보다 우리가 놓쳐온 더 근본적인 질문을 짚고 싶다. VR은 현실의 대체제가 되려 했지만, 애초에 그것이 올바른 방향이었는가.\n\nPallasmaa의 논리는 건축을 넘어 더 넓은 함의를 갖는다. 공간 경험에서 신체성이 배제될 때 인간은 소외된다는 것. VR은 이 문제를 해결하기는커녕 극단으로 밀어붙인다. 시각적 몰입이 깊어질수록 신체의 나머지—발바닥의 질감, 공기의 온도, 타인과 나누는 물리적 공간—는 더 선명하게 차단되고, 그 간극이 역설적으로 소외감을 증폭시킨다. 이것이 본능적으로 사회적인 동물인 인간에게 어딘가 모를 불안감을 만들어내는 이유다.\n\n이는 VR 기술 자체의 실패라기보다, 그것을 현실의 대체제로 상상했던 방식의 실패다. AR, XR 같은 개념이 부각되는 이유도 여기 있다. 이 기술들은 현실을 지우는 대신 현실 위에 겹쳐 쓴다. Pallasmaa의 언어를 빌리자면, 신체가 세계와 접촉하는 면을 유지한 채로 경험을 확장한다.\n\n그렇다면 VR이 진정한 가능성을 발휘하는 순간은 언제인가. 그것은 현실의 경험을 대체할 때가 아니라, 현실에서는 불가능한 접근을 가능하게 할 때다. 이때 VR은 현실의 경쟁자가 아니라 현실의 연장이 된다.\n\nPallasmaa는 "우리는 건축을 눈으로 보는 것이 아니라 몸으로 거주한다"고 썼다. 아마도 우리가 VR에 던져야 할 질문도 같다. 이 공간에 거주할 수 있는가, 아니면 그저 볼 수 있을 뿐인가.`,
-      versions:[{label:'v1',body:'',title:'가상공간의 역설',date:new Date().toLocaleDateString('ko-KR')}],
-      created:Date.now(), updated:Date.now()
-    };
-    essays[eid].versions[0].body = essays[eid].body;
+function load(){
+  try{
+    var r1=localStorage.getItem('es_essays');
+    var r2=localStorage.getItem('es_folders');
+    if(r1) essays=JSON.parse(r1);
+    if(r2) folders=JSON.parse(r2);
+  }catch(e){ essays={}; folders={}; }
+  if(!Object.keys(folders).length){
+    var fid='f_'+Date.now();
+    folders[fid]={id:fid,name:'VR & Architecture',order:0,open:true};
+    var eid='e_'+Date.now();
+    var sb='Juhani Pallasmaa는 The Eyes of the Skin에서 현대 건축이 시각 중심주의에 지나치게 종속되어 왔다고 주장한다. 그에 따르면 건축은 망막이 아니라 몸 전체로 경험되는 것이며, 촉각과 청각과 후각을 배제한 공간은 인간을 세계로부터 소외시킨다.\n\nPallasmaa의 논리는 건축을 넘어 더 넓은 함의를 갖는다. 공간 경험에서 신체성이 배제될 때 인간은 소외된다. VR은 이 문제를 극단으로 밀어붙인다. 시각적 몰입이 깊어질수록 신체의 나머지는 더 선명하게 차단되고, 그 간극이 역설적으로 소외감을 증폭시킨다.\n\n이는 VR 기술 자체의 실패라기보다, 그것을 현실의 대체제로 상상했던 방식의 실패다. AR과 XR 같은 개념이 부각되는 이유도 여기 있다. 이 기술들은 현실을 지우는 대신 현실 위에 겹쳐 쓴다.\n\nVR이 진정한 가능성을 발휘하는 순간은 현실에서 불가능한 접근을 가능하게 할 때다. 이때 VR은 현실의 경쟁자가 아니라 현실의 연장이 된다.';
+    essays[eid]={id:eid,folderId:fid,order:0,title:'가상공간의 역설',body:sb,versions:[{label:'v1',body:sb,title:'가상공간의 역설',date:new Date().toLocaleDateString('ko-KR')}],created:Date.now(),updated:Date.now()};
     persist();
   }
-  renderList();
+  render();
 }
 
-function persist() {
-  try {
-    localStorage.setItem('essays_v2',  JSON.stringify(essays));
-    localStorage.setItem('folders_v2', JSON.stringify(folders));
-  } catch(e) {}
+function persist(){
+  try{
+    localStorage.setItem('es_essays',JSON.stringify(essays));
+    localStorage.setItem('es_folders',JSON.stringify(folders));
+  }catch(e){}
 }
 
-// ── RENDER ────────────────────────────────────────────────
 function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
-function renderList() {
-  const list = document.getElementById('essayList');
-  const sortedFolders = Object.values(folders).sort((a,b)=>a.order-b.order);
-  const orphans = Object.values(essays).filter(e=>!e.folderId||!folders[e.folderId]).sort((a,b)=>(a.order||0)-(b.order||0));
-  let html = '';
-
-  sortedFolders.forEach(f => {
-    const fe = Object.values(essays).filter(e=>e.folderId===f.id).sort((a,b)=>(a.order||0)-(b.order||0));
-    html += `<div class="folder-block" id="fb-${f.id}">
-      <div class="folder-header" onclick="toggleFolder('${f.id}')">
-        <span class="folder-arrow ${f.open?'open':''}" id="fa-${f.id}">▶</span>
-        <span class="folder-icon">◈</span>
-        <span class="folder-name" id="fn-${f.id}">${esc(f.name)}</span>
-        <span class="folder-count">${fe.length}</span>
-        <span class="folder-actions" onclick="event.stopPropagation()">
-          <button class="folder-act-btn" onclick="renameFolder('${f.id}')">✎</button>
-          <button class="folder-act-btn del" onclick="deleteFolder('${f.id}')">✕</button>
-        </span>
-      </div>
-      <div class="folder-essays ${f.open?'open':''}" id="fe-${f.id}"
-           ondragover="onFolderOver(event,'${f.id}')" ondrop="onFolderDrop(event,'${f.id}')">
-        ${fe.map(e=>essayHTML(e)).join('')}
-        ${fe.length===0?`<div style="padding:6px 30px;font-size:0.56rem;color:var(--text-dim);">empty — drag essays here</div>`:''}
-      </div>
-    </div>`;
-  });
-
-  if (orphans.length) {
-    html += `<div class="folder-block">
-      <div class="folder-header" onclick="toggleOrphans()">
-        <span class="folder-arrow open" id="fa-orphan">▶</span>
-        <span class="folder-icon" style="color:var(--text-dim);">◇</span>
-        <span class="folder-name">Uncategorized</span>
-        <span class="folder-count">${orphans.length}</span>
-      </div>
-      <div class="folder-essays open" id="fe-__orphan"
-           ondragover="onFolderOver(event,'__orphan')" ondrop="onFolderDrop(event,'__orphan')">
-        ${orphans.map(e=>essayHTML(e)).join('')}
-      </div>
-    </div>`;
-  }
-
-  list.innerHTML = html;
-}
-
-function essayHTML(e) {
-  return `<div class="essay-item ${e.id===currentId?'active':''}" id="ei-${e.id}"
-    onclick="openEssay('${e.id}')"
-    draggable="true"
-    ondragstart="onDragStart(event,'${e.id}')"
-    ondragover="onItemOver(event,'${e.id}')"
-    ondragleave="onItemLeave('${e.id}')"
-    ondrop="onItemDrop(event,'${e.id}')">
-    <span class="essay-drag-handle">⠿</span>
-    <div class="essay-item-text">
-      <div class="essay-item-title">${esc(e.title)||'<em style="opacity:0.4;font-style:italic;">Untitled</em>'}</div>
-      <div class="essay-item-meta"><span class="version-tag">v${(e.versions||[]).length}</span>${new Date(e.updated).toLocaleDateString('ko-KR')}</div>
-    </div>
-    <span class="essay-item-actions" onclick="event.stopPropagation()">
-      <button class="essay-act-btn" title="Move to folder" onclick="showMoveModal('${e.id}')">⤷</button>
-      <button class="essay-act-btn del" title="Delete" onclick="deleteEssay('${e.id}')">✕</button>
-    </span>
-  </div>`;
-}
-
-// ── FOLDER OPS ────────────────────────────────────────────
-function newFolder() {
-  const id = 'f_'+Date.now();
-  folders[id] = { id, name:'New Folder', order:Object.values(folders).length, open:true };
-  persist(); renderList();
-  setTimeout(()=>renameFolder(id), 40);
-}
-
-function toggleFolder(fid) {
-  folders[fid].open = !folders[fid].open;
-  persist();
-  const arr = document.getElementById('fa-'+fid);
-  const body = document.getElementById('fe-'+fid);
-  if (arr) arr.classList.toggle('open', folders[fid].open);
-  if (body) body.classList.toggle('open', folders[fid].open);
-}
-
-function toggleOrphans() {
-  const arr  = document.getElementById('fa-orphan');
-  const body = document.getElementById('fe-__orphan');
-  if (!arr) return;
-  const isOpen = arr.classList.contains('open');
-  arr.classList.toggle('open', !isOpen);
-  if (body) body.classList.toggle('open', !isOpen);
-}
-
-function renameFolder(fid) {
-  const nameEl = document.getElementById('fn-'+fid);
-  if (!nameEl) return;
-  const cur = folders[fid].name;
-  const inp = document.createElement('input');
-  inp.className = 'folder-name-input';
-  inp.value = cur;
-  nameEl.replaceWith(inp);
-  inp.focus(); inp.select();
-  const commit = () => {
-    folders[fid].name = inp.value.trim()||'Untitled Folder';
-    persist(); renderList();
-  };
-  inp.onblur = commit;
-  inp.onkeydown = e => {
-    if (e.key==='Enter') { e.preventDefault(); commit(); }
-    if (e.key==='Escape') { inp.value=cur; commit(); }
-  };
-}
-
-function deleteFolder(fid) {
-  const cnt = Object.values(essays).filter(e=>e.folderId===fid).length;
-  const msg = cnt ? `"${folders[fid].name}" 삭제. ${cnt}개 에세이는 Uncategorized로 이동합니다.`
-                  : `"${folders[fid].name}" 폴더를 삭제합니다.`;
-  if (!confirm(msg)) return;
-  Object.values(essays).forEach(e=>{ if(e.folderId===fid) e.folderId=null; });
-  delete folders[fid];
-  persist(); renderList();
-}
-
-// ── ESSAY OPS ─────────────────────────────────────────────
-function newEssay() {
-  const id = 'e_'+Date.now();
-  const firstFolder = Object.values(folders).sort((a,b)=>a.order-b.order)[0];
-  const folderId = firstFolder?.id||null;
-  const order = Object.values(essays).filter(e=>e.folderId===folderId).length;
-  essays[id] = { id, folderId, order, title:'', body:'', versions:[], created:Date.now(), updated:Date.now() };
-  persist(); renderList(); openEssay(id);
-  document.getElementById('titleInput').focus();
-}
-
-function deleteEssay(id) {
-  const e = essays[id];
-  if (!confirm(`"${e.title||'Untitled'}" 에세이를 삭제합니다.`)) return;
-  delete essays[id];
-  if (currentId===id) {
-    currentId=null;
-    document.getElementById('emptyState').style.display='flex';
-    document.getElementById('editorPane').style.display='none';
-    document.getElementById('actionBar').style.display='none';
-  }
-  persist(); renderList();
-}
-
-function showMoveModal(eid) {
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.onclick = e => { if(e.target===overlay) overlay.remove(); };
-  const sortedF = Object.values(folders).sort((a,b)=>a.order-b.order);
-  let items = sortedF.map(f=>`<div class="modal-folder-item" onclick="moveEssayTo('${eid}','${f.id}');document.querySelector('.modal-overlay').remove()"><span style="color:var(--accent2)">◈</span>${esc(f.name)}</div>`).join('');
-  items += `<div class="modal-folder-item" onclick="moveEssayTo('${eid}',null);document.querySelector('.modal-overlay').remove()"><span style="color:var(--text-dim)">◇</span>Uncategorized</div>`;
-  overlay.innerHTML = `<div class="modal"><div class="modal-title">Move to folder</div>${items}<button class="modal-cancel" onclick="this.closest('.modal-overlay').remove()">Cancel</button></div>`;
-  document.body.appendChild(overlay);
-}
-
-function moveEssayTo(eid, folderId) {
-  if (essays[eid]) { essays[eid].folderId=folderId; persist(); renderList(); }
-}
-
-// ── DRAG & DROP ───────────────────────────────────────────
-function onDragStart(e, id) { dragId=id; e.dataTransfer.effectAllowed='move'; }
-
-function onItemOver(e, tid) {
-  e.preventDefault(); e.stopPropagation();
-  if (dragId===tid) return;
-  document.querySelectorAll('.essay-item').forEach(el=>el.classList.remove('drag-over'));
-  const el = document.getElementById('ei-'+tid);
-  if (el) el.classList.add('drag-over');
-  dragOverId = tid;
-}
-
-function onItemLeave(tid) {
-  const el = document.getElementById('ei-'+tid);
-  if (el) el.classList.remove('drag-over');
-}
-
-function onItemDrop(e, tid) {
-  e.preventDefault(); e.stopPropagation();
-  document.querySelectorAll('.essay-item').forEach(el=>el.classList.remove('drag-over'));
-  if (!dragId||dragId===tid) return;
-  const src=essays[dragId], tgt=essays[tid];
-  if (!src||!tgt) return;
-  src.folderId = tgt.folderId;
-  const sibs = Object.values(essays).filter(e=>e.folderId===tgt.folderId&&e.id!==dragId).sort((a,b)=>(a.order||0)-(b.order||0));
-  const idx = sibs.findIndex(e=>e.id===tid);
-  sibs.splice(idx,0,src);
-  sibs.forEach((e,i)=>{ e.order=i; });
-  dragId=null; dragOverId=null;
-  persist(); renderList();
-}
-
-function onFolderOver(e, fid) { e.preventDefault(); }
-
-function onFolderDrop(e, fid) {
-  e.preventDefault();
-  if (!dragId) return;
-  const targetFid = fid==='__orphan' ? null : fid;
-  if (dragOverId && essays[dragOverId]?.folderId===targetFid) return;
-  const src = essays[dragId];
-  if (!src) return;
-  src.folderId = targetFid;
-  const sibs = Object.values(essays).filter(e=>e.folderId===targetFid&&e.id!==dragId).sort((a,b)=>(a.order||0)-(b.order||0));
-  src.order = sibs.length;
-  dragId=null; dragOverId=null;
-  persist(); renderList();
-}
-
-// ── EDITOR ────────────────────────────────────────────────
-function openEssay(id) {
-  currentId=id;
-  const e=essays[id];
-  document.getElementById('emptyState').style.display='none';
-  document.getElementById('editorPane').style.display='flex';
-  document.getElementById('titleInput').value=e.title||'';
-  document.getElementById('bodyInput').value=e.body||'';
-  document.getElementById('actionBar').style.display='flex';
-  updateWordCount(); updateVersionIndicator(); renderVersionsList(); renderList();
-}
-
-function onEdit() {
-  if (!currentId) return;
-  essays[currentId].title=document.getElementById('titleInput').value;
-  essays[currentId].body=document.getElementById('bodyInput').value;
-  essays[currentId].updated=Date.now();
-  updateWordCount();
-  clearTimeout(autoSaveTimer);
-  autoSaveTimer=setTimeout(()=>{ persist(); renderList(); },1500);
-}
-
-function updateWordCount() {
-  const b=document.getElementById('bodyInput').value;
-  document.getElementById('wordCount').textContent=`${b.length} chars · ${b.split(/\s+/).filter(Boolean).length} words`;
-}
-
-function updateVersionIndicator() {
-  if (!currentId) return;
-  const e=essays[currentId], n=(e.versions||[]).length;
-  document.getElementById('versionIndicator').textContent=`v${n} · ${new Date(e.updated).toLocaleDateString('ko-KR')}`;
-}
-
-function saveVersion() {
-  if (!currentId) return;
-  const e=essays[currentId];
-  if (!e.versions) e.versions=[];
-  const n=e.versions.length+1;
-  e.versions.push({label:`v${n}`,body:e.body,title:e.title,date:new Date().toLocaleDateString('ko-KR')});
-  persist(); updateVersionIndicator(); renderVersionsList(); showToast(`Saved as v${n}`);
-}
-
-function renderVersionsList() {
-  if (!currentId) return;
-  const e=essays[currentId], c=document.getElementById('versionsList');
-  if (!e.versions||!e.versions.length) { c.innerHTML=`<div class="empty-state" style="height:180px;"><div class="empty-state-text" style="font-size:0.8rem;">No versions yet</div></div>`; return; }
-  c.innerHTML=[...e.versions].reverse().map((v,i)=>`<div class="version-item ${i===0?'current':''}" onclick="loadVersion(${e.versions.length-1-i})"><div class="version-num">${v.label}</div><div class="version-date">${v.date}</div></div>`).join('');
-}
-
-function loadVersion(idx) {
-  if (!currentId) return;
-  const v=essays[currentId].versions[idx];
-  if (v) {
-    document.getElementById('bodyInput').value=v.body;
-    document.getElementById('titleInput').value=v.title||essays[currentId].title;
-    essays[currentId].body=v.body;
-    updateWordCount(); showToast(`Loaded ${v.label}`);
-  }
-}
-
-// ── API ───────────────────────────────────────────────────
-async function callClaude(system, userContent) {
-  try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, userContent })
-    });
-    const data = await res.json();
-    if (data.error) { showToast('API 오류: ' + data.error); return ''; }
-    return data.text || '';
-  } catch(err) {
-    showToast('연결 오류: ' + err.message);
-    return '';
-  }
-}
-
-async function triggerFeedback() {
-  if (!currentId) return;
-  const body=document.getElementById('bodyInput').value.trim();
-  if (!body) return;
-  switchTab('feedback');
-  document.getElementById('tab-feedback').innerHTML=loadingHTML('Analyzing...');
-
-  const FEEDBACK_SYSTEM = `You are a senior faculty member and writing mentor at Harvard GSD, specializing in the MDes program with expertise in design theory, media studies, and architectural discourse. You are reviewing student response papers and essays for the MDes Proseminar.
-
-Your role is to give rigorous, intellectually honest, and genuinely motivating feedback. You hold the writer to a high academic standard — the standard of serious design scholarship — while also recognizing what is genuinely strong and intellectually alive in their work.
-
-Respond entirely in Korean. Structure your feedback in the following four sections, each clearly labeled:
-
-【강점과 흥미로운 지점】
-Identify what is genuinely working in the essay. Be specific — quote or paraphrase actual sentences or ideas from the text. Note what is intellectually compelling, what shows original thinking, what demonstrates good instincts about the material. This is not empty encouragement: if something is strong, explain precisely why it matters and why a GSD reader would find it interesting. If the core argument has real potential, say so explicitly.
-
-【논지와 구조 분석】
-Evaluate the essay's central argument with rigor. Is the thesis clearly stated? Is the logical progression from claim to evidence to conclusion coherent? Identify any gaps in reasoning, unsupported leaps, or circular logic. Note where the argument becomes its most powerful and where it loses force. Assess how well the writer has handled the intellectual tension or paradox at the core of the piece.
-
-【텍스트 활용과 이론적 깊이】
-Assess how the writer engages with referenced texts (Pallasmaa, Illich, McLuhan, Merleau-Ponty, Borgmann, Hayles, Yuk Hui, etc.). Does the citation feel integrated or decorative? Is the writer in genuine dialogue with the source, or just borrowing terminology? Suggest where a deeper or more precise engagement with a specific text would strengthen the argument. Recommend one additional theoretical frame or thinker that could productively complicate or extend the essay's claims.
-
-【다음 단계를 위한 제안】
-Offer 2-3 concrete, actionable directions for revision or development. These should be genuinely productive — not generic advice, but specific to this essay's argument and the GSD intellectual context. End with one sharp question that the writer should sit with: a question that doesn't have an easy answer, but that points toward where the essay could go next.`;
-
-  const text = await callClaude(FEEDBACK_SYSTEM, `다음 에세이를 검토해줘:\n\n${body}`);
-  document.getElementById('tab-feedback').innerHTML=`<div class="ai-response-label">✦ GSD-Level Feedback</div><div class="ai-response">${text}</div>`;
-}
-
-async function triggerTranslation(dir) {
-  if (!currentId) return;
-  const body=document.getElementById('bodyInput').value.trim();
-  if (!body) return;
-  switchTab('translation');
-  const isKoEn=dir==='ko-en';
-  setLang(isKoEn?'en':'ko');
-  document.getElementById('translationContent').innerHTML=loadingHTML('Translating...');
-  const system = isKoEn
-    ? `Translate the following Korean academic essay into fluent, scholarly English suitable for a Harvard GSD context. Preserve the author's intellectual voice and terminology. Output only the translated text.`
-    : `Translate the following English academic essay into fluent, scholarly Korean. Output only the translated text.`;
-  const text=await callClaude(system,body);
-  document.getElementById('translationContent').innerHTML=`<div class="ai-response-label">${isKoEn?'🇺🇸 English Translation':'🇰🇷 한국어 번역'}</div><div class="ai-response">${text}</div><div style="margin-top:8px;font-size:0.6rem;color:var(--text-dim);letter-spacing:0.08em;">학습 팁: 번역본을 소리내어 읽고 어색한 표현은 직접 수정해보세요.</div>`;
-}
-
-async function triggerReadingRecs() {
-  if (!currentId) return;
-  const body=document.getElementById('bodyInput').value.trim();
-  if (!body) return;
-  switchTab('readings');
-  const c=document.getElementById('readingsContent');
-  const d=document.createElement('div');
-  d.innerHTML=`<div style="padding:12px 0 8px;font-size:0.6rem;letter-spacing:0.12em;color:var(--accent);text-transform:uppercase;">AI Recommendations</div>${loadingHTML('Searching...')}`;
-  c.insertBefore(d,c.firstChild);
-  const text=await callClaude(
-    `You are an architectural theory expert helping a student prepare for Harvard GSD MDes. Suggest 2-3 additional specific readings that would strengthen the argument. For each: title, author, 1-2 sentence explanation in Korean. Format: **Title** — Author (year)\n[explanation]`,
-    `이 에세이의 논지를 강화할 추가 읽기 자료를 추천해줘:\n\n${body}`
-  );
-  d.innerHTML=`<div style="padding:12px 0 8px;font-size:0.6rem;letter-spacing:0.12em;color:var(--accent);text-transform:uppercase;">AI Recommendations</div><div class="ai-response" style="font-size:0.75rem;">${text}</div>`;
-}
-
-// ── UI ────────────────────────────────────────────────────
-function loadingHTML(msg) {
-  return `<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div><span style="margin-left:4px;font-size:0.7rem;color:var(--text-muted)">${msg}</span></div>`;
-}
-
-function switchTab(name) {
-  const tabs=['feedback','translation','readings','versions'];
-  document.querySelectorAll('.panel-tab').forEach((t,i)=>t.classList.toggle('active',tabs[i]===name));
-  document.querySelectorAll('.panel-content').forEach(c=>c.classList.toggle('active',c.id===`tab-${name}`));
-}
-
-function setLang(lang) {
-  activeLang=lang;
-  document.getElementById('langKO').classList.toggle('active',lang==='ko');
-  document.getElementById('langEN').classList.toggle('active',lang==='en');
-}
-
-function showToast(msg) {
-  const t=document.createElement('div');
-  t.style.cssText=`position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--bg);padding:8px 18px;font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;z-index:9999;transition:opacity 0.5s;`;
+function toast(msg){
+  var t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ac);color:var(--bg);padding:7px 16px;font-family:IBM Plex Mono,monospace;font-size:0.63rem;z-index:9999;transition:opacity 0.5s;';
   t.textContent=msg;
   document.body.appendChild(t);
-  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>t.remove(),500); },1800);
+  setTimeout(function(){ t.style.opacity='0'; setTimeout(function(){ if(t.parentNode) t.parentNode.removeChild(t); },500); },2000);
 }
 
+function ldHTML(msg){
+  return '<div class="ld2"><div class="ldot"></div><div class="ldot"></div><div class="ldot"></div><span style="margin-left:4px;font-size:0.68rem;color:var(--mu)">'+msg+'</span></div>';
+}
 
-// ── PRINT ─────────────────────────────────────────────────
-async function printEssay() {
-  if (!currentId) { showToast('No essay selected'); return; }
-  const e = essays[currentId];
-  if (!e.body.trim()) { showToast('Essay is empty'); return; }
-
-  const folder = e.folderId && folders[e.folderId] ? folders[e.folderId].name : 'Uncategorized';
-  const dateStr = new Date(e.updated).toLocaleDateString('ko-KR', {year:'numeric',month:'long',day:'numeric'});
-  const title = e.title || 'Untitled';
-
-  showToast('번역 생성 중...');
-  let enText = '';
-  try {
-    enText = await callClaude(
-      'Translate the following Korean academic essay into fluent, scholarly English suitable for a Harvard GSD context. Preserve the author's intellectual voice. Output only the translated text, no commentary.',
-      e.body
-    );
-  } catch(err) { enText = '(Translation unavailable)'; }
-
-  // Build lines for copying area
-  const lineCount = Math.max(e.body.split('\n').length * 2, 30);
-  const copyLines = Array(lineCount).fill('<div class="copy-line"></div>').join('');
-
-  const printHTML = `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">
-<style>
-  @page { size: A4 landscape; margin: 14mm 16mm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'EB Garamond', serif; font-size: 9.5pt; line-height: 1.75; color: #1a1a16; background: #fff; }
-
-  .page-header {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 10mm;
-    padding-bottom: 4mm;
-    border-bottom: 0.5pt solid #999;
+function render(){
+  var list=document.getElementById('sbList');
+  var fArr=Object.values(folders).sort(function(a,b){return a.order-b.order;});
+  var orph=Object.values(essays).filter(function(e){return !e.folderId||!folders[e.folderId];}).sort(function(a,b){return (a.order||0)-(b.order||0);});
+  var h='';
+  fArr.forEach(function(f){
+    var fe=Object.values(essays).filter(function(e){return e.folderId===f.id;}).sort(function(a,b){return (a.order||0)-(b.order||0);});
+    h+='<div class="fb" id="fb-'+f.id+'">';
+    h+='<div class="fh" onclick="tgF(\''+f.id+'\')">';
+    h+='<span class="far '+(f.open?'open':'')+'" id="fa-'+f.id+'">&#9658;</span>';
+    h+='<span class="fic">&#9672;</span>';
+    h+='<span class="fn" id="fn-'+f.id+'">'+esc(f.name)+'</span>';
+    h+='<span class="fct">'+fe.length+'</span>';
+    h+='<span class="fa2" onclick="event.stopPropagation()">';
+    h+='<button class="fab" onclick="renF(\''+f.id+'\')">&#9998;</button>';
+    h+='<button class="fab d" onclick="delF(\''+f.id+'\')">&#10005;</button>';
+    h+='</span></div>';
+    h+='<div class="fe '+(f.open?'open':'')+'" id="fe-'+f.id+'" ondragover="fdov(event,\''+f.id+'\')" ondrop="fdrp(event,\''+f.id+'\')">';
+    fe.forEach(function(e){h+=eHTML(e);});
+    if(!fe.length) h+='<div style="padding:5px 28px;font-size:0.54rem;color:var(--dm);">empty</div>';
+    h+='</div></div>';
+  });
+  if(orph.length){
+    h+='<div class="fb"><div class="fh" onclick="tgO()">';
+    h+='<span class="far open" id="fa-orph">&#9658;</span>';
+    h+='<span class="fic" style="color:var(--dm)">&#9671;</span>';
+    h+='<span class="fn">Uncategorized</span>';
+    h+='<span class="fct">'+orph.length+'</span></div>';
+    h+='<div class="fe open" id="fe-orph" ondragover="fdov(event,\'__orph\')" ondrop="fdrp(event,\'__orph\')">';
+    orph.forEach(function(e){h+=eHTML(e);});
+    h+='</div></div>';
   }
+  list.innerHTML=h;
+}
 
-  .meta {
-    text-align: right;
-    font-family: 'EB Garamond', serif;
-    font-size: 8pt;
-    color: #555;
-    line-height: 1.6;
+function eHTML(e){
+  var cls='ei'+(e.id===curId?' active':'');
+  var vc=(e.versions||[]).length;
+  var dt=new Date(e.updated).toLocaleDateString('ko-KR');
+  var tit=e.title?esc(e.title):'<em style="opacity:0.4;font-style:italic;">Untitled</em>';
+  return '<div class="'+cls+'" id="ei-'+e.id+'" onclick="openE(\''+e.id+'\')" draggable="true" ondragstart="ds(event,\''+e.id+'\')" ondragover="iov(event,\''+e.id+'\')" ondragleave="ilv(\''+e.id+'\')" ondrop="idrp(event,\''+e.id+'\')">'
+    +'<span class="eh">&#8943;</span>'
+    +'<div class="et2"><div class="etit">'+tit+'</div><div class="emt"><span class="vt">v'+vc+'</span>'+dt+'</div></div>'
+    +'<span class="ea" onclick="event.stopPropagation()">'
+    +'<button class="eab" onclick="mvM(\''+e.id+'\')">&#10551;</button>'
+    +'<button class="eab d" onclick="delE(\''+e.id+'\')">&#10005;</button>'
+    +'</span></div>';
+}
+
+function newFolder(){
+  var id='f_'+Date.now();
+  folders[id]={id:id,name:'New Folder',order:Object.values(folders).length,open:true};
+  persist(); render();
+  setTimeout(function(){renF(id);},40);
+}
+
+function tgF(fid){
+  folders[fid].open=!folders[fid].open; persist();
+  var a=document.getElementById('fa-'+fid), b=document.getElementById('fe-'+fid);
+  if(a) a.classList.toggle('open',folders[fid].open);
+  if(b) b.classList.toggle('open',folders[fid].open);
+}
+
+function tgO(){
+  var a=document.getElementById('fa-orph'), b=document.getElementById('fe-orph');
+  if(!a) return;
+  var op=a.classList.contains('open');
+  a.classList.toggle('open',!op);
+  if(b) b.classList.toggle('open',!op);
+}
+
+function renF(fid){
+  var el=document.getElementById('fn-'+fid);
+  if(!el) return;
+  var cur=folders[fid].name;
+  var inp=document.createElement('input');
+  inp.className='fni'; inp.value=cur;
+  el.replaceWith(inp); inp.focus(); inp.select();
+  function cm(){ folders[fid].name=inp.value.trim()||'Untitled Folder'; persist(); render(); }
+  inp.onblur=cm;
+  inp.onkeydown=function(ev){ if(ev.key==='Enter'){ev.preventDefault();cm();} if(ev.key==='Escape'){inp.value=cur;cm();} };
+}
+
+function delF(fid){
+  var cnt=Object.values(essays).filter(function(e){return e.folderId===fid;}).length;
+  if(!confirm('"'+folders[fid].name+'" 삭제.'+(cnt?' '+cnt+'개 에세이는 Uncategorized로 이동합니다.':''))) return;
+  Object.values(essays).forEach(function(e){if(e.folderId===fid) e.folderId=null;});
+  delete folders[fid]; persist(); render();
+}
+
+function newEssay(){
+  var id='e_'+Date.now();
+  var fa=Object.values(folders).sort(function(a,b){return a.order-b.order;});
+  var fid=fa.length?fa[0].id:null;
+  var ord=Object.values(essays).filter(function(e){return e.folderId===fid;}).length;
+  essays[id]={id:id,folderId:fid,order:ord,title:'',body:'',versions:[],created:Date.now(),updated:Date.now()};
+  persist(); render(); openE(id);
+  document.getElementById('titleIn').focus();
+}
+
+function delE(id){
+  var e=essays[id];
+  if(!confirm('"'+(e.title||'Untitled')+'" 삭제합니다.')) return;
+  delete essays[id];
+  if(curId===id){
+    curId=null;
+    document.getElementById('emptyState').style.display='flex';
+    document.getElementById('edPane').style.display='none';
+    document.getElementById('actBar').style.display='none';
   }
+  persist(); render();
+}
 
-  .meta .essay-title {
-    font-size: 11pt;
-    font-style: italic;
-    color: #1a1a16;
-    font-weight: 500;
-    display: block;
-    margin-bottom: 2pt;
+function mvM(eid){
+  var ov=document.createElement('div'); ov.className='ov';
+  ov.onclick=function(ev){if(ev.target===ov) ov.parentNode.removeChild(ov);};
+  var fa=Object.values(folders).sort(function(a,b){return a.order-b.order;});
+  var items=fa.map(function(f){
+    return '<div class="mfi" onclick="mvTo(\''+eid+'\',\''+f.id+'\');document.querySelector(\'.ov\').remove()"><span style="color:var(--ac2)">&#9672;</span>'+esc(f.name)+'</div>';
+  }).join('');
+  items+='<div class="mfi" onclick="mvTo(\''+eid+'\',null);document.querySelector(\'.ov\').remove()"><span style="color:var(--dm)">&#9671;</span>Uncategorized</div>';
+  ov.innerHTML='<div class="mo"><div class="mot">Move to folder</div>'+items+'<button class="mc" onclick="this.closest(\'.ov\').remove()">Cancel</button></div>';
+  document.body.appendChild(ov);
+}
+
+function mvTo(eid,fid){ if(essays[eid]){essays[eid].folderId=fid;persist();render();} }
+
+function ds(ev,id){ dragId=id; ev.dataTransfer.effectAllowed='move'; }
+function iov(ev,tid){
+  ev.preventDefault(); ev.stopPropagation();
+  if(dragId===tid) return;
+  document.querySelectorAll('.ei').forEach(function(el){el.classList.remove('dov');});
+  var el=document.getElementById('ei-'+tid);
+  if(el) el.classList.add('dov');
+}
+function ilv(tid){ var el=document.getElementById('ei-'+tid); if(el) el.classList.remove('dov'); }
+function idrp(ev,tid){
+  ev.preventDefault(); ev.stopPropagation();
+  document.querySelectorAll('.ei').forEach(function(el){el.classList.remove('dov');});
+  if(!dragId||dragId===tid) return;
+  var src=essays[dragId], tgt=essays[tid];
+  if(!src||!tgt) return;
+  src.folderId=tgt.folderId;
+  var sb2=Object.values(essays).filter(function(e){return e.folderId===tgt.folderId&&e.id!==dragId;}).sort(function(a,b){return (a.order||0)-(b.order||0);});
+  sb2.splice(sb2.findIndex(function(e){return e.id===tid;}),0,src);
+  sb2.forEach(function(e,i){e.order=i;});
+  dragId=null; persist(); render();
+}
+function fdov(ev){ ev.preventDefault(); }
+function fdrp(ev,fid){
+  ev.preventDefault();
+  if(!dragId) return;
+  var tfid=fid==='__orph'?null:fid;
+  var src=essays[dragId];
+  if(!src) return;
+  src.folderId=tfid;
+  src.order=Object.values(essays).filter(function(e){return e.folderId===tfid&&e.id!==dragId;}).length;
+  dragId=null; persist(); render();
+}
+
+function openE(id){
+  curId=id; var e=essays[id];
+  document.getElementById('emptyState').style.display='none';
+  document.getElementById('edPane').style.display='flex';
+  document.getElementById('titleIn').value=e.title||'';
+  document.getElementById('bodyIn').value=e.body||'';
+  document.getElementById('actBar').style.display='flex';
+  updWC(); updVI(); rendV(); render();
+}
+
+function onEdit(){
+  if(!curId) return;
+  essays[curId].title=document.getElementById('titleIn').value;
+  essays[curId].body=document.getElementById('bodyIn').value;
+  essays[curId].updated=Date.now();
+  updWC();
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(function(){persist();render();},1500);
+}
+
+function updWC(){
+  var b=document.getElementById('bodyIn').value;
+  document.getElementById('wc').textContent=b.length+' chars · '+b.split(/\s+/).filter(Boolean).length+' words';
+}
+
+function updVI(){
+  if(!curId) return;
+  var e=essays[curId];
+  document.getElementById('vInd').textContent='v'+(e.versions||[]).length+' · '+new Date(e.updated).toLocaleDateString('ko-KR');
+}
+
+function saveVer(){
+  if(!curId) return;
+  var e=essays[curId];
+  if(!e.versions) e.versions=[];
+  var n=e.versions.length+1;
+  e.versions.push({label:'v'+n,body:e.body,title:e.title,date:new Date().toLocaleDateString('ko-KR')});
+  persist(); updVI(); rendV(); toast('Saved as v'+n);
+}
+
+function rendV(){
+  if(!curId) return;
+  var e=essays[curId], c=document.getElementById('verList');
+  if(!e.versions||!e.versions.length){
+    c.innerHTML='<div class="emp" style="height:160px;"><div class="empt" style="font-size:0.82rem;">No versions yet</div></div>';
+    return;
   }
+  c.innerHTML=e.versions.slice().reverse().map(function(v,i){
+    var idx=e.versions.length-1-i;
+    return '<div class="vit '+(i===0?'cur':'')+'" onclick="ldV('+idx+')"><div class="vn2">'+v.label+'</div><div class="vd2">'+v.date+'</div></div>';
+  }).join('');
+}
 
-  .columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 6mm;
-    height: calc(100% - 28mm);
-  }
+function ldV(idx){
+  if(!curId) return;
+  var v=essays[curId].versions[idx];
+  if(v){ document.getElementById('bodyIn').value=v.body; document.getElementById('titleIn').value=v.title||''; essays[curId].body=v.body; updWC(); toast('Loaded '+v.label); }
+}
 
-  .col {
-    border-right: 0.4pt solid #ccc;
-    padding-right: 5mm;
-    overflow: hidden;
-  }
+async function callAPI(sys, uc){
+  try{
+    var res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:sys,userContent:uc})});
+    var data=await res.json();
+    if(data.error){toast('API Error: '+data.error);return '';}
+    return data.text||'';
+  }catch(err){toast('Connection error: '+err.message);return '';}
+}
 
-  .col:last-child { border-right: none; padding-right: 0; }
+async function doFeedback(){
+  if(!curId) return;
+  var body=document.getElementById('bodyIn').value.trim();
+  if(!body) return;
+  switchTab('feedback');
+  document.getElementById('tab-feedback').innerHTML=ldHTML('Analyzing...');
+  var sys='You are a senior faculty member and writing mentor at Harvard GSD, specializing in the MDes program with expertise in design theory, media studies, and architectural discourse.\n\nGive rigorous, intellectually honest, and genuinely motivating feedback. Hold the writer to a high academic standard while recognizing what is genuinely strong.\n\nRespond entirely in Korean. Structure feedback in four labeled sections:\n\n[강점과 흥미로운 지점]\nIdentify what is genuinely working. Be specific. Note compelling ideas, original thinking, real potential.\n\n[논지와 구조 분석]\nEvaluate the central argument with rigor. Is the thesis clear? Is the logical progression coherent? Identify gaps. Note where the argument is strongest and weakest.\n\n[텍스트 활용과 이론적 깊이]\nAssess engagement with referenced texts. Integrated or decorative? Suggest deeper engagement. Recommend one additional theoretical frame.\n\n[다음 단계를 위한 제안]\nOffer 2-3 concrete revision directions. End with one sharp question pointing toward next development.';
+  var text=await callAPI(sys,'다음 에세이를 검토해줘:\n\n'+body);
+  document.getElementById('tab-feedback').innerHTML='<div class="ail">&#10022; GSD-Level Feedback</div><div class="aib">'+text+'</div>';
+}
 
-  .col-label {
-    font-family: 'EB Garamond', serif;
-    font-size: 7pt;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: #888;
-    margin-bottom: 4mm;
-    padding-bottom: 2mm;
-    border-bottom: 0.4pt solid #ddd;
-  }
+async function doTranslate(dir){
+  if(!curId) return;
+  var body=document.getElementById('bodyIn').value.trim();
+  if(!body) return;
+  switchTab('translation');
+  var koEn=dir==='ko-en';
+  setLang(koEn?'en':'ko');
+  document.getElementById('transContent').innerHTML=ldHTML('Translating...');
+  var sys=koEn
+    ?'Translate the following Korean academic essay into fluent, scholarly English suitable for a Harvard GSD context. Preserve intellectual voice. Output only the translated text.'
+    :'Translate the following English academic essay into fluent, scholarly Korean. Output only the translated text.';
+  var text=await callAPI(sys,body);
+  document.getElementById('transContent').innerHTML='<div class="ail">'+(koEn?'English Translation':'한국어 번역')+'</div><div class="aib">'+text+'</div><div style="margin-top:6px;font-size:0.58rem;color:var(--dm);">팁: 번역본을 소리내어 읽고 어색한 표현을 직접 수정해보세요.</div>';
+}
 
-  .col-body {
-    font-family: 'Noto Serif KR', serif;
-    font-size: 9pt;
-    line-height: 1.85;
-    color: #1a1a16;
-    word-break: keep-all;
-  }
+async function doReadings(){
+  if(!curId) return;
+  var body=document.getElementById('bodyIn').value.trim();
+  if(!body) return;
+  switchTab('readings');
+  var c=document.getElementById('readingsContent');
+  var d=document.createElement('div');
+  d.innerHTML='<div style="padding:10px 0 6px;font-size:0.55rem;letter-spacing:0.12em;color:var(--ac);text-transform:uppercase;">AI Recommendations</div>'+ldHTML('Searching...');
+  c.insertBefore(d,c.firstChild);
+  var sys='You are an architectural theory expert helping a student prepare for Harvard GSD MDes. Suggest 2-3 additional specific readings to strengthen the argument. For each: title, author, 1-2 sentence explanation in Korean.';
+  var text=await callAPI(sys,'이 에세이의 논지를 강화할 추가 읽기 자료를 추천해줘:\n\n'+body);
+  d.innerHTML='<div style="padding:10px 0 6px;font-size:0.55rem;letter-spacing:0.12em;color:var(--ac);text-transform:uppercase;">AI Recommendations</div><div class="aib" style="font-size:0.73rem;">'+text+'</div>';
+}
 
-  .col-body-en {
-    font-family: 'EB Garamond', serif;
-    font-size: 9.5pt;
-    line-height: 1.85;
-    color: #1a1a16;
-  }
+async function doPrint(){
+  if(!curId){toast('No essay selected');return;}
+  var e=essays[curId];
+  if(!e.body.trim()){toast('Essay is empty');return;}
+  var folder=(e.folderId&&folders[e.folderId])?folders[e.folderId].name:'Uncategorized';
+  var dateStr=new Date(e.updated).toLocaleDateString('ko-KR',{year:'numeric',month:'long',day:'numeric'});
+  var title=e.title||'Untitled';
+  toast('번역 생성 중...');
+  var enText='';
+  try{ enText=await callAPI('Translate the following Korean academic essay into fluent scholarly English for Harvard GSD. Output only translated text.',e.body); }
+  catch(err){ enText='(Translation unavailable)'; }
+  var lc=Math.max(e.body.split('\n').length*2,30);
+  var cl=''; for(var i=0;i<lc;i++) cl+='<div style="border-bottom:0.5pt solid #d0d0c8;height:1.85em;"></div>';
+  var bh=e.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  var eh=enText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  var pw=window.open('','_blank');
+  if(!pw){toast('팝업을 허용해주세요.');return;}
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8">';
+  html+='<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+KR:wght@300;400&display=swap" rel="stylesheet">';
+  html+='<style>@page{size:A4 landscape;margin:14mm 16mm}*{box-sizing:border-box;margin:0;padding:0}body{font-family:EB Garamond,serif;font-size:9.5pt;line-height:1.75;color:#1a1a16;background:#fff}.ph{display:flex;justify-content:flex-end;margin-bottom:8mm;padding-bottom:4mm;border-bottom:0.5pt solid #999}.me{text-align:right;font-family:EB Garamond,serif;font-size:8pt;color:#555;line-height:1.6}.met{font-size:11pt;font-style:italic;color:#1a1a16;font-weight:500;display:block;margin-bottom:2pt}.co{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6mm}.cl2{border-right:0.4pt solid #ccc;padding-right:5mm;overflow:hidden}.cl2:last-child{border-right:none;padding-right:0}.clb{font-family:EB Garamond,serif;font-size:7pt;letter-spacing:0.15em;text-transform:uppercase;color:#888;margin-bottom:4mm;padding-bottom:2mm;border-bottom:0.4pt solid #ddd}.ko{font-family:Noto Serif KR,serif;font-size:9pt;line-height:1.85;color:#1a1a16;word-break:keep-all}.en{font-family:EB Garamond,serif;font-size:9.5pt;line-height:1.85;color:#1a1a16}</style></head><body>';
+  html+='<div class="ph"><div class="me"><span class="met">'+esc(title)+'</span><span>'+esc(folder)+'</span><br><span>'+dateStr+'</span></div></div>';
+  html+='<div class="co">';
+  html+='<div class="cl2"><div class="clb">한국어 원문</div><div class="ko">'+bh+'</div></div>';
+  html+='<div class="cl2"><div class="clb">English Translation</div><div class="en">'+eh+'</div></div>';
+  html+='<div class="cl2"><div class="clb">필사 - Transcription</div>'+cl+'</div>';
+  html+='</div></body></html>';
+  pw.document.write(html);
+  pw.document.close();
+  pw.onload=function(){pw.focus();pw.print();};
+}
 
-  .copy-line {
-    border-bottom: 0.5pt solid #d0d0c8;
-    height: 1.85em;
-  }
-</style>
-</head>
-<body>
-  <div class="page-header">
-    <div class="meta">
-      <span class="essay-title">${title}</span>
-      <span>${folder}</span><br>
-      <span>${dateStr}</span>
-    </div>
-  </div>
-  <div class="columns">
-    <div class="col">
-      <div class="col-label">한국어 원문</div>
-      <div class="col-body">${e.body.replace(/\n/g,'<br>')}</div>
-    </div>
-    <div class="col">
-      <div class="col-label">English Translation</div>
-      <div class="col-body-en">${enText.replace(/\n/g,'<br>')}</div>
-    </div>
-    <div class="col">
-      <div class="col-label">필사 — Transcription</div>
-      ${copyLines}
-    </div>
-  </div>
-</body>
-</html>`;
+function switchTab(name){
+  var tabs=['feedback','translation','readings','versions'];
+  document.querySelectorAll('.pt').forEach(function(t,i){t.classList.toggle('active',tabs[i]===name);});
+  document.querySelectorAll('.pc').forEach(function(c){c.classList.toggle('active',c.id==='tab-'+name);});
+}
 
-  const win = window.open('', '_blank');
-  win.document.write(printHTML);
-  win.document.close();
-  win.onload = () => { win.focus(); win.print(); };
+function setLang(lang){
+  document.getElementById('lbKO').classList.toggle('active',lang==='ko');
+  document.getElementById('lbEN').classList.toggle('active',lang==='en');
 }
 
 load();
